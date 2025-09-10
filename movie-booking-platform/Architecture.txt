@@ -1,0 +1,172 @@
+Unzip Spring Boot Appliation.zip 
+Import movie-booking-platform as a Maven Project.
+
+movie-booking-platform (pom)
+├── discovery-server
+│   ├── src/main/java
+│   │   └── com/xyz/moviebooking/discovery
+│   │       └── DiscoveryServerApplication.java
+│   └── src/main/resources
+│       └── application.yml
+├── api-gateway
+│   ├── src/main/java
+│   │   └── com/xyz/moviebooking/apigateway
+│   │       └── ApiGatewayApplication.java
+│   └── src/main/resources
+│       └── application.yml
+├── show-service
+│   ├── src/main/java
+│   │   └── com/xyz/moviebooking/showservice
+│   │       ├── entities
+│   │       ├── repositories
+│   │       ├── services
+│   │       ├── controllers
+│   │       └── ShowServiceApplication.java
+│   └── src/main/resources
+│       └── application.yml
+├── booking-service
+│   ├── src/main/java
+│   │   └── com/xyz/moviebooking/bookingservice
+│   │       ├── entities
+│   │       ├── repositories
+│   │       ├── services
+│   │       ├── controllers
+│   │       └── BookingServiceApplication.java
+│   └── src/main/resources
+│       └── application.yml
+├── theatre-service
+│   ├── src/main/java
+│   │   └── com/xyz/moviebooking/theatreservice
+│   │       ├── entities
+│   │       ├── repositories
+│   │       ├── services
+│   │       ├── controllers
+│   │       └── TheatreServiceApplication.java
+│   └── src/main/resources
+│       └── application.yml
+├── movie-service
+│   ├── src/main/java
+│   │   └── com/xyz/moviebooking/movieservice
+│   │       ├── entities
+│   │       ├── repositories
+│   │       ├── services
+│   │       ├── controllers
+│   │       └── MovieServiceApplication.java
+│   └── src/main/resources
+│       └── application.yml
+└── payment-service
+    ├── src/main/java
+    │   └── com/xyz/moviebooking/paymentservice
+    │       ├── entities
+    │       ├── repositories
+    │       ├── services
+    │       ├── controllers
+    │       └── PaymentServiceApplication.java
+    └── src/main/resources
+        └── application.yml
+		
+Selected Write Scenario: Book Movie Tickets
+Design Pattern Used:
+=======================
+Facade Pattern: The BookingFacadeService will orchestrate the complex process of booking (check availability, calculate price, lock seats, process payment, confirm booking).
+
+Strategy Pattern: For applying different discount strategies (e.g., ThirdTicketDiscountStrategy, AfternoonShowDiscountStrategy).
+
+
+Architectural Diagram
+========================
+  +-------------------+      +-----------------+      +---------------------+
+  |   Web / Mobile    |      |   API Gateway   |      |   Service Registry  |
+  |     Clients       +----->+  (Spring Cloud  +----->+    (Eureka/Consul)  |
+  |                   |      |     Gateway)    |      |                     |
+  +-------------------+      +--------+--------+      +---------------------+
+                                      |
+              +-----------------------+-----------------------+
+              |                       |                       |
+      +-------v-------+       +-------v-------+       +-------v-------+
+      |  Booking      |       |   Show &      |       |   Theatre     |
+      |  Service      |       |   Movie Service|      |  Management   |
+      |  (Write)      |       |   (Read)      |       |  Service      |
+      +-------+-------+       +-------+-------+       +-------+-------+
+              |                       |                       |
+      +-------v-------+       +-------v-------+       +-------v-------+
+      |   PostgreSQL  |       |   PostgreSQL  |       |   PostgreSQL  |
+      |   (Booking)   |       |   (Read)      |       |   (Theatre)   |
+      +-------+-------+       +-------+-------+       +-------+-------+
+              |                       |                       |
+      +-------v-----------------------+-----------------------+-------+
+      |                 Centralized Logging (ELK Stack)               |
+      |                 Monitoring (Prometheus/Grafana)               |
+      +---------------------------------------------------------------+
+                                      |
+                              +-------v-------+
+                              |   Cloud       |
+                              |   (AWS/Azure) |
+                              +---------------+
+							  
+
+Key Design Decisions
+Microservices Architecture: Decouples functionality (Booking, Browse, Theatre Management) for independent scaling, development, and deployment. The Browse API (read-heavy) can be scaled separately from the Booking API (write-heavy).
+
+API Gateway: Single entry point for routing, authentication, rate limiting, and cross-cutting concerns.
+
+Database per Service: Each service has its own database to ensure loose coupling. For complex queries (like the browse scenario), the Read Service can use a denormalized view or be fed by events from other services (CQRS pattern).
+
+Transactional Integrity:
+
+Saga Pattern: For distributed transactions across services (e.g., Booking involves BookingService and PaymentService). If a step fails, compensating transactions (e.g., cancel booking, refund) are triggered.
+
+Pessimistic Locking: Used within the BookingService domain (SELECT FOR UPDATE) to handle concurrent seat selection and prevent overbooking. This is suitable for high-contention data like seat inventory.
+
+Integration & Localization:
+
+REST APIs for server-to-server integration with existing theatre IT systems.
+
+Async Messaging (Kafka/RabbitMQ) for reliable, eventually consistent data synchronization between our platform and partner systems (e.g., when a partner updates a show).
+
+Localization: Store language and region-specific data (movie titles, descriptions) in the database, keyed by a locale code. The API accepts a Accept-Language header.
+
+Scalability & 99.99% Availability:
+
+Multi-Region Deployment: Deploy services in active-active or active-passive mode across cloud regions/geos using AWS Global Accelerator or Azure Traffic Manager.
+
+Auto-Scaling: Configure Horizontal Pod Autoscaler (Kubernetes) or AWS ASG based on CPU/Memory and custom metrics (requests per second, payment transaction volume).
+
+Database: Use read replicas for the Browse service. Implement caching (Redis) for frequently accessed data like cities, movies, and theatre lists.
+
+Security (OWASP Top 10):
+
+API Gateway: Enforces HTTPS, uses WAF (Web Application Firewall) to protect against SQL injection, XSS.
+
+Authentication: OAuth2.0 / JWT for secure API access.
+
+Input Validation: Strict validation on all endpoints (@Valid in Spring).
+
+Secrets Management: Use HashiCorp Vault or cloud-native secrets manager (AWS Secrets Manager) for DB passwords, API keys.
+
+3. Platform Provisioning, Sizing & Release
+Technology Choices
+Language: Java 17 (LTS version, strong ecosystem, performance)
+
+Framework: Spring Boot (productivity, vast ecosystem), Spring Cloud (for microservices patterns)
+
+AI: Recommendation Engine: Suggest movies based on user's booking history and similar users. Can be implemented using collaborative filtering (Apache Mahout) or more advanced ML frameworks (TensorFlow) deployed as a separate service.
+
+Database: PostgreSQL (Relational, ACID compliant, JSONB support for flexible data). Chosen for its reliability and strong community support.
+
+Integration: Kafka (for async, reliable event streaming between services and external partners), REST (for synchronous communication).
+
+Cloud: AWS (Preferred for its comprehensive service portfolio) – EKS (Kubernetes) for orchestration, RDS for PostgreSQL, ElastiCache for Redis, S3 for static assets.
+
+Monitoring: Prometheus for metrics collection, Grafana for dashboards, ELK Stack (Elasticsearch, Logstash, Kibana) for centralized logging and analysis.
+
+Databases created:
+postgres=# CREATE DATABASE show_db;
+CREATE DATABASE
+postgres=# CREATE DATABASE booking_db;
+CREATE DATABASE
+postgres=# CREATE DATABASE theatre_db;
+CREATE DATABASE
+postgres=# CREATE DATABASE movie_db;
+CREATE DATABASE
+postgres=# CREATE DATABASE payment_db;
