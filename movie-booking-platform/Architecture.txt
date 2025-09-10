@@ -1,6 +1,20 @@
-Unzip Spring Boot Appliation.zip 
-Import movie-booking-platform as a Maven Project.
+# 🎬 Movie Booking Platform — Setup Guide
 
+This document describes how to **import, configure, and understand** the Movie Booking Platform built with Spring Boot Microservices.
+
+---
+
+## 📦 Import Instructions
+
+1. **Unzip** `Spring Boot Application.zip`.  
+2. In Eclipse:  
+   - `File → Import → Existing Maven Projects`  
+   - Select the unzipped folder `movie-booking-platform`.  
+   - Eclipse will detect all modules.
+
+---
+
+## 📂 Project Structure
 movie-booking-platform (pom)
 ├── discovery-server
 │   ├── src/main/java
@@ -65,12 +79,25 @@ movie-booking-platform (pom)
     └── src/main/resources
         └── application.yml
 		
-Selected Write Scenario: Book Movie Tickets
-Design Pattern Used:
-=======================
-Facade Pattern: The BookingFacadeService will orchestrate the complex process of booking (check availability, calculate price, lock seats, process payment, confirm booking).
+---
 
-Strategy Pattern: For applying different discount strategies (e.g., ThirdTicketDiscountStrategy, AfternoonShowDiscountStrategy).
+## 📝 Selected Write Scenario: Book Movie Tickets
+
+### 🎯 Design Patterns Used
+- **Facade Pattern** → `BookingFacadeService` orchestrates booking workflow:  
+  - Check availability  
+  - Calculate price  
+  - Lock seats  
+  - Process payment  
+  - Confirm booking  
+
+- **Strategy Pattern** → Different discount strategies:  
+  - `ThirdTicketDiscountStrategy`  
+  - `AfternoonShowDiscountStrategy`  
+
+---
+
+## 🏗️ Architectural Diagram
 
 
 Architectural Diagram
@@ -105,68 +132,53 @@ Architectural Diagram
                               +---------------+
 							  
 
-Key Design Decisions
-Microservices Architecture: Decouples functionality (Booking, Browse, Theatre Management) for independent scaling, development, and deployment. The Browse API (read-heavy) can be scaled separately from the Booking API (write-heavy).
+---
 
-API Gateway: Single entry point for routing, authentication, rate limiting, and cross-cutting concerns.
+## 🔑 Key Design Decisions
 
-Database per Service: Each service has its own database to ensure loose coupling. For complex queries (like the browse scenario), the Read Service can use a denormalized view or be fed by events from other services (CQRS pattern).
+- **Microservices Architecture** → Independent scaling for booking (write-heavy) vs browsing (read-heavy).  
+- **API Gateway** → Centralized entry point for authentication, routing, and rate-limiting.  
+- **Database per Service** → Loose coupling. Supports **CQRS** for read-heavy queries.  
 
-Transactional Integrity:
+### 🔄 Transactional Integrity
+- **Saga Pattern** → Handles distributed transactions (booking + payment).  
+- **Pessimistic Locking** → Prevents seat overbooking.  
 
-Saga Pattern: For distributed transactions across services (e.g., Booking involves BookingService and PaymentService). If a step fails, compensating transactions (e.g., cancel booking, refund) are triggered.
+### 📡 Integration & Localization
+- REST APIs + Async Messaging (Kafka/RabbitMQ).  
+- Localization supported via `Accept-Language` header.  
 
-Pessimistic Locking: Used within the BookingService domain (SELECT FOR UPDATE) to handle concurrent seat selection and prevent overbooking. This is suitable for high-contention data like seat inventory.
+### 📈 Scalability & Availability
+- Multi-region deployment (AWS/Azure).  
+- Auto-scaling via Kubernetes / AWS ASG.  
+- Redis cache for frequently accessed data.  
 
-Integration & Localization:
+### 🔒 Security
+- HTTPS enforced at API Gateway.  
+- OAuth2.0 / JWT authentication.  
+- OWASP Top 10 protections (input validation, WAF, secrets management).  
 
-REST APIs for server-to-server integration with existing theatre IT systems.
+---
 
-Async Messaging (Kafka/RabbitMQ) for reliable, eventually consistent data synchronization between our platform and partner systems (e.g., when a partner updates a show).
+## ⚙️ Platform Provisioning & Tech Choices
 
-Localization: Store language and region-specific data (movie titles, descriptions) in the database, keyed by a locale code. The API accepts a Accept-Language header.
+- **Language** → Java 17  
+- **Framework** → Spring Boot + Spring Cloud  
+- **Databases** → PostgreSQL (per service)  
+- **Async Messaging** → Kafka / RabbitMQ  
+- **Cloud** → AWS (EKS, RDS, ElastiCache, S3)  
+- **Monitoring & Logging** → Prometheus, Grafana, ELK Stack  
+- **AI Extension (Optional)** → Recommendation engine using ML  
 
-Scalability & 99.99% Availability:
+---
 
-Multi-Region Deployment: Deploy services in active-active or active-passive mode across cloud regions/geos using AWS Global Accelerator or Azure Traffic Manager.
+## 🗄️ PostgreSQL Setup
 
-Auto-Scaling: Configure Horizontal Pod Autoscaler (Kubernetes) or AWS ASG based on CPU/Memory and custom metrics (requests per second, payment transaction volume).
+Run in `psql`:
 
-Database: Use read replicas for the Browse service. Implement caching (Redis) for frequently accessed data like cities, movies, and theatre lists.
-
-Security (OWASP Top 10):
-
-API Gateway: Enforces HTTPS, uses WAF (Web Application Firewall) to protect against SQL injection, XSS.
-
-Authentication: OAuth2.0 / JWT for secure API access.
-
-Input Validation: Strict validation on all endpoints (@Valid in Spring).
-
-Secrets Management: Use HashiCorp Vault or cloud-native secrets manager (AWS Secrets Manager) for DB passwords, API keys.
-
-3. Platform Provisioning, Sizing & Release
-Technology Choices
-Language: Java 17 (LTS version, strong ecosystem, performance)
-
-Framework: Spring Boot (productivity, vast ecosystem), Spring Cloud (for microservices patterns)
-
-AI: Recommendation Engine: Suggest movies based on user's booking history and similar users. Can be implemented using collaborative filtering (Apache Mahout) or more advanced ML frameworks (TensorFlow) deployed as a separate service.
-
-Database: PostgreSQL (Relational, ACID compliant, JSONB support for flexible data). Chosen for its reliability and strong community support.
-
-Integration: Kafka (for async, reliable event streaming between services and external partners), REST (for synchronous communication).
-
-Cloud: AWS (Preferred for its comprehensive service portfolio) – EKS (Kubernetes) for orchestration, RDS for PostgreSQL, ElastiCache for Redis, S3 for static assets.
-
-Monitoring: Prometheus for metrics collection, Grafana for dashboards, ELK Stack (Elasticsearch, Logstash, Kibana) for centralized logging and analysis.
-
-Databases created:
-postgres=# CREATE DATABASE show_db;
-CREATE DATABASE
-postgres=# CREATE DATABASE booking_db;
-CREATE DATABASE
-postgres=# CREATE DATABASE theatre_db;
-CREATE DATABASE
-postgres=# CREATE DATABASE movie_db;
-CREATE DATABASE
-postgres=# CREATE DATABASE payment_db;
+```sql
+CREATE DATABASE show_db;
+CREATE DATABASE booking_db;
+CREATE DATABASE theatre_db;
+CREATE DATABASE movie_db;
+CREATE DATABASE payment_db;
