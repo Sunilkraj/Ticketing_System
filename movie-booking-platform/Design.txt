@@ -1,1 +1,238 @@
+1. Use Case Diagram
+┌────────────────────────────────────────────────────────────────────────────┐
+│                           Movie Booking Platform                           │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│   ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐    │
+│   │   Customer      │      │ Theatre Partner │      │   Admin         │    │
+│   │  (B2C User)     │      │  (B2B User)     │      │                 │    │
+│   └─────────────────┘      └─────────────────┘      └─────────────────┘    │
+│         ▲                         ▲                         ▲              │
+│         │                         │                         │              │
+├─────────┼─────────────────────────┼─────────────────────────┼──────────────┤
+│         │                         │                         │              │
+│    ┌────┴─────┐              ┌────┴─────┐              ┌────┴─────┐        │
+│    │ Browse   │              │ Manage   │              │ Manage   │        │
+│    │ Movies   │              │ Theatres │              │ System   │        │
+│    └────┬─────┘              └────┬─────┘              └────┬─────┘        │
+│         │                         │                         │              │
+│    ┌────┴─────┐              ┌────┴─────┐              ┌────┴─────┐        │
+│    │ Search   │              │ Create   │              │ Monitor  │        │
+│    │ Shows    │              │ Shows    │              │ Services │        │
+│    └────┬─────┘              └────┬─────┘              └────┬─────┘        │
+│         │                         │                                        │
+│    ┌────┴─────┐              ┌────┴─────┐                                  │
+│    │ Book     │              │ Update   │                                  │
+│    │ Tickets  │              │ Shows    │                                  │
+│    └────┬─────┘              └────┬─────┘                                  │
+│         │                         │                                        │
+│    ┌────┴─────┐              ┌────┴─────┐                                  │
+│    │ Make     │              │ Manage   │                                  │
+│    │ Payment  │              │ Seats    │                                  │
+│    └────┬─────┘              └────┬─────┘                                  │
+│         │                         │                                        │
+│    ┌────┴─────┐              ┌────┴─────┐                                  │
+│    │ Receive  │              │ View     │                                  │
+│    │ Confirmation│           │ Reports  │                                  │
+│    └──────────┘              └──────────┘                                  │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+Actors:
+
+Customer (B2C User): End user who books tickets
+
+Theatre Partner (B2B User): Theatre owner who manages shows
+
+Admin: System administrator
+
+Key Use Cases:
+
+Browse Movies
+
+Search Shows (by city, date, movie)
+
+Book Tickets (with discount calculation)
+
+Make Payment
+
+Manage Theatres
+
+Create/Update Shows
+
+Manage Seat Inventory
+
+Monitor System Health
+
+2. Sequence Diagrams
+2.1. Browse Shows and Book Tickets Sequence Diagram
+
+┌─────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│ Customer│    │ API Gateway │    │Show Service │    │Theatre Srvc │    │Booking Srvc │    │Payment Srvc │
+└─────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+     │               │               │               │               │               │
+     │1: Search Shows│               │               │               │               │
+     │──────────────►│               │               │               │               │
+     │               │2: Get Shows   │               │               │               │
+     │               │──────────────►│               │               │               │
+     │               │               │3: Get Theatres│               │               │
+     │               │               │──────────────►│               │               │
+     │               │               │               │4: Return      │               │
+     │               │               │◄──────────────│               │               │
+     │               │               │5: Process     │               │               │
+     │               │               │   & Return    │               │               │
+     │               │◄──────────────│               │               │               │
+     │◄──────────────│               │               │               │               │
+     │               │               │               │               │               │
+     │6: Book Tickets│               │               │               │               │
+     │──────────────►│               │               │               │               │
+     │               │7: Create Booking              │               │               │
+     │               │──────────────►│               │               │               │
+     │               │               │8: Check Seats │               │               │
+     │               │               │──────────────►│               │               │
+     │               │               │◄──────────────│               │               │
+     │               │               │9: Lock Seats  │               │               │
+     │               │               │──────────────►│               │               │
+     │               │               │◄──────────────│               │               │
+     │               │               │10: Calculate  │               │               │
+     │               │               │    Price      │               │               │
+     │               │               │──────────────►│               │               │
+     │               │               │◄──────────────│               │               │
+     │               │               │11: Process Payment            │               │
+     │               │               │──────────────────────────────►│               │
+     │               │               │               │12: Confirm    │               │
+     │               │               │◄──────────────────────────────│               │
+     │               │               │13: Confirm Booking            │               │
+     │               │◄──────────────│               │               │               │
+     │◄──────────────│               │               │               │               │
+     │               │               │               │               │               │
+
+2.2. Theatre Partner Managing Shows Sequence Diagram
+┌───────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│Theatre Partner│    │ API Gateway │    │Theatre Srvc │    │ Show Service│
+└───────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+     │                    │               │               │
+     │1: Create Theatre   │               │               │
+     │───────────────────►│               │               │
+     │                    │2: Create      │               │
+     │                    │──────────────►│               │
+     │                    │               │3: Save Theatre│
+     │                    │               │──────────────►│
+     │                    │               │◄──────────────│
+     │                    │◄──────────────│               │
+     │◄───────────────────│               │               │
+     │                    │               │               │
+     │4: Create Show      │               │               │
+     │───────────────────►│               │               │
+     │                    │5: Create Show │               │
+     │                    │──────────────────────────────►│
+     │                    │               │               │6: Validate & Save
+     │                    │               │               │──────────────►│
+     │                    │               │               │◄──────────────│
+     │                    │◄──────────────────────────────│               │
+     │◄───────────────────│               │               │               │
+     │                    │               │               │               │
+
+2.3. Payment Processing Sequence Diagram
+┌─────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│Booking  │    │ API Gateway │    │Booking Srvc │    │Payment Srvc │    │Payment Gateway│
+│ Service │    │             │    │             │    │             │    │   (External) │
+└─────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+     │               │               │               │               │
+     │1: Init Payment│               │               │               │
+     │──────────────►│               │               │               │
+     │               │2: Process Pay │               │               │
+     │               │──────────────►│               │               │
+     │               │               │3: Create Payment Record       │
+     │               │               │──────────────►│               │
+     │               │               │               │4: Call Gateway│
+     │               │               │               │──────────────►│
+     │               │               │               │               │5: Process
+     │               │               │               │◄──────────────│
+     │               │               │6: Update Record               │
+     │               │               │◄──────────────│               │
+     │               │◄──────────────│               │               │
+     │◄──────────────│               │               │               │
+     │               │               │               │               │
+
+3. Detailed Use Case Descriptions
+3.1. Book Tickets Use Case
+Primary Actor: Customer
+Preconditions: User is logged in, show exists, seats available
+Main Flow:
+
+Customer searches for shows by movie, city, and date
+
+System displays available shows with timing and seat availability
+
+Customer selects show and seats
+
+System calculates price with applicable discounts
+
+Customer confirms booking and makes payment
+
+System confirms booking and sends confirmation
+
+System updates seat inventory
+
+Alternate Flows:
+
+Seats not available: Suggest alternative shows/seats
+
+Payment failed: Retry or cancel booking
+
+Session timeout: Restart booking process
+
+3.2. Manage Shows Use Case
+Primary Actor: Theatre Partner
+Preconditions: Partner is authenticated and authorized
+Main Flow:
+
+Partner logs into management portal
+
+Partner selects theatre and screen
+
+Partner creates new show with movie, timing, and pricing
+
+System validates show details and availability
+
+System creates show and updates inventory
+
+Show becomes available for booking
+
+Alternate Flows:
+
+Timing conflict: Show overlapping prevention
+
+Capacity exceeded: Validate against screen capacity
+
+Movie not available: Check movie licensing
+
+4. System Context Diagram
+┌─────────────────────────────────────────────────────────────────────── ────┐
+│                      Movie Booking System Context                          │
+├──────────────────────────────────────────────────────────────────────── ───┤
+│                                                                            │
+│   ┌─────────────┐      ┌─────────────┐      ┌─────────────┐                │
+│   │   Customers │      │  Theatres   │      │  Payment    │                │
+│   │ (Mobile/Web)│      │  Partners   │      │  Gateways   │                │
+│   └─────────────┘      └─────────────┘      └─────────────┘                │
+│         │                    │                    │                        │
+│         ▼                    ▼                    ▼                        │
+│   ┌─────────────────────────────────────────────────────────────────────┐  │
+│   │                   Movie Booking Platform                            │  │
+│   │                                                                     │  │
+│   │   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐│  │
+│   │   │   API       │  │  Service    │  │  Database   │  │   Message   ││  │
+│   │   │  Gateway    │  │ Discovery   │  │   Cluster   │  │   Queue     ││  │
+│   │   └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘│  │
+│   │                                                                     │  │
+│   └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                            │
+│   ┌─────────────┐      ┌─────────────┐      ┌─────────────┐                │
+│   │   Analytics │      │  Email/SMS  │      │   Monitoring│                │
+│   │   Services  │      │  Services   │      │   Tools     │                │
+│   └─────────────┘      └─────────────┘      └─────────────┘                │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
 
